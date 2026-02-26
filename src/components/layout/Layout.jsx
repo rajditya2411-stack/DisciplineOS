@@ -16,15 +16,21 @@ const pageTitles = {
 };
 
 export default function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const location = useLocation();
   const title = pageTitles[location.pathname] ?? 'Dashboard';
 
   return (
     <div className="min-h-screen bg-background font-sans">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="lg:ml-60 min-h-screen flex flex-col">
-        <TopBar title={title} onMenuClick={() => setSidebarOpen(true)} />
+      <Sidebar isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} desktopOpen={sidebarOpen} />
+      <div className={`transition-all duration-200 min-h-screen flex flex-col ${sidebarOpen ? 'lg:ml-60' : 'lg:ml-0'}`}>
+        <TopBar 
+          title={title} 
+          onMenuClick={() => setMobileSidebarOpen(true)} 
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          sidebarOpen={sidebarOpen}
+        />
         <main className="flex-1 p-8 min-h-[calc(100vh-72px)]">
           <Outlet />
         </main>

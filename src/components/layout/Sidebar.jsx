@@ -14,7 +14,7 @@ const navItems = [
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
-export default function Sidebar({ isOpen, onClose }) {
+export default function Sidebar({ isOpen, onClose, desktopOpen = true }) {
   const location = useLocation();
   const { user, initials } = useUser();
   return (
@@ -28,9 +28,9 @@ export default function Sidebar({ isOpen, onClose }) {
         />
       )}
       <aside
-        className={`fixed left-0 top-0 z-50 h-screen w-60 bg-sidebar flex flex-col transition-transform duration-200 ease-out lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-50 h-screen w-60 bg-sidebar flex flex-col transition-transform duration-200 ease-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        } ${desktopOpen ? 'lg:translate-x-0' : 'lg:-translate-x-full'}`}
       >
         {/* Logo */}
         <div className="p-6 border-b border-white/10">
