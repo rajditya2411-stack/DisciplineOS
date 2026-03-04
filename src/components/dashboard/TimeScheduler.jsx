@@ -16,11 +16,12 @@ const formatTime = (hour) => {
   return `${displayH}:${m} ${ampm}`;
 };
 
-export default function TimeScheduler() {
+export default function TimeScheduler({ selectedDate }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState(null);
   const [filter, setFilter] = useState('All');
-  const date = todayStr();
+  const date = selectedDate || todayStr();
+  const isToday = date === todayStr();
   const {
     getBlocksForDate,
     getTotalHoursForDate,
@@ -53,7 +54,9 @@ export default function TimeScheduler() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-primary" />
-            <h2 className="text-text-primary text-lg font-bold">Today&apos;s Schedule</h2>
+            <h2 className="text-text-primary text-lg font-bold">
+              {isToday ? "Today's Schedule" : "Schedule for " + date}
+            </h2>
           </div>
           <button
             type="button"

@@ -4,14 +4,26 @@ import { useHabits } from '../../context/HabitsContext';
 import { HABIT_CATEGORIES } from '../../utils/categories';
 import AddHabitModal from '../modals/AddHabitModal';
 
-export default function HabitChecklist() {
-  const { getTodaysHabitsWithMeta, toggleCompletion, updateHabit, deleteHabit, addHabit } = useHabits();
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export default function HabitChecklist({ selectedDate }) {
+  const { toggleCompletion, updateHabit, deleteHabit, addHabit, habits, completions, getStreak } = useHabits();
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
   const [menuOpenId, setMenuOpenId] = useState(null);
 
-  const habitsWithMeta = getTodaysHabitsWithMeta();
+  const date = selectedDate || todayStr();
+  const isToday = date === todayStr();
+
+  const habitsWithMeta = habits.map((h) => ({
+    ...h,
+    done: !!completions[date]?.[h.id],
+    streak: getStreak(h.id),
+    completedAt: completions[date]?.[h.id] ? "Checked" : null,
+  }));
   const filtered =
     categoryFilter === 'All'
       ? habitsWithMeta
@@ -31,7 +43,9 @@ export default function HabitChecklist() {
     <>
       <div className="bg-card rounded-2xl shadow-card p-6 transition-all duration-200">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <h2 className="text-text-primary text-lg font-semibold">Today&apos;s Habits</h2>
+          <h2 className="text-text-primary text-lg font-semibold">
+            {isToday ? "Today's Habits" : "Habits for " + date}
+          </h2>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             <select
               value={categoryFilter}
@@ -72,7 +86,7 @@ export default function HabitChecklist() {
               >
                 <button
                   type="button"
-                  onClick={() => toggleCompletion(habit.id)}
+                  onClick={() => toggleCompletion(habit.id, date)}
                   className="flex items-center gap-3 min-w-0 flex-1 text-left"
                 >
                   <div

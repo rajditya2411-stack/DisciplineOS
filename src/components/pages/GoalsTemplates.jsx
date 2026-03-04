@@ -134,41 +134,41 @@ export default function GoalsTemplates() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
+    <div className="max-w-7xl mx-auto space-y-6 px-4 sm:px-6 lg:px-8 pb-12">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
            <h1 className="text-xl font-bold text-[#111827] flex items-center gap-2">
              <span className="text-text-secondary">»</span> GoalsTemplates
            </h1>
-           <div className="flex items-center gap-2 ml-4">
+           <div className="flex items-center gap-2">
               <button className="p-1 hover:bg-gray-100 rounded"><ChevronLeft className="w-4 h-4 text-text-secondary" /></button>
-              <span className="text-sm font-medium text-text-primary">Saturday, February 28, 2026</span>
+              <span className="text-sm font-medium text-text-primary whitespace-nowrap">Saturday, Feb 28, 2026</span>
               <button className="p-1 hover:bg-gray-100 rounded"><ChevronRight className="w-4 h-4 text-text-secondary" /></button>
-              <button className="ml-2 px-3 py-1 bg-[#111827] text-white text-xs font-bold rounded-lg">Today</button>
+              <button className="px-3 py-1 bg-[#111827] text-white text-xs font-bold rounded-lg">Today</button>
            </div>
         </div>
       </div>
 
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div>
           <h2 className="text-2xl font-bold text-[#111827]">Goals & Templates</h2>
-          <p className="text-sm text-text-secondary mt-1">{filteredGoals.length} active goals</p>
+          <p className="text-sm text-text-secondary mt-1">{filteredGoals.length} {activeTab.toLowerCase()} goals</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#111827] text-white rounded-lg font-bold hover:opacity-90 transition-all shadow-sm"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-[#111827] text-white rounded-xl font-bold hover:opacity-90 transition-all shadow-sm"
         >
           <Plus className="w-4 h-4" />
           New Goal
         </button>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar sm:overflow-visible">
         {['Active', 'Templates', 'Completed'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all border ${
+            className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all border whitespace-nowrap ${
               activeTab === tab 
                 ? 'bg-[#111827] text-white border-[#111827]' 
                 : 'bg-white text-text-secondary border-border hover:bg-gray-50'
@@ -179,9 +179,9 @@ export default function GoalsTemplates() {
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border border-border min-h-[400px] flex flex-col items-center justify-center p-12 text-center">
+      <div className="bg-white rounded-3xl border border-border min-h-[400px] flex flex-col items-center justify-center text-center">
         {filteredGoals.length === 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-4 p-12">
             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto border border-border">
               <Target className="w-8 h-8 text-[#111827]" />
             </div>
@@ -191,25 +191,25 @@ export default function GoalsTemplates() {
             </div>
           </div>
         ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full p-4 sm:p-6">
               {filteredGoals.map(goal => {
                 const progress = Math.min(100, (Number(goal.current) / Number(goal.target)) * 100);
                 const isEditing = editingProgressId === goal.id;
                 
                 return (
-                  <div key={goal.id} className="bg-white rounded-xl p-6 border border-border shadow-sm flex flex-col gap-4 text-left group">
+                  <div key={goal.id} className="bg-white rounded-2xl p-5 sm:p-6 border border-border shadow-sm flex flex-col gap-4 text-left group transition-all hover:shadow-md">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-lg font-bold text-[#111827]">{goal.name}</h3>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-lg font-bold text-[#111827] truncate">{goal.name}</h3>
                         <p className="text-xs text-text-secondary font-medium uppercase tracking-wider">{goal.category}</p>
                       </div>
-                      <div className="flex gap-2">
-                        <span className="px-3 py-1 bg-gray-100 text-[#111827] rounded-full text-[10px] font-bold uppercase tracking-wider">
+                      <div className="flex gap-2 shrink-0 ml-2">
+                        <span className="px-2.5 py-1 bg-gray-100 text-[#111827] rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
                           {goal.type}
                         </span>
                         <button 
                           onClick={() => deleteGoal(goal.id)}
-                          className="p-1 text-text-secondary hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="p-1 text-text-secondary hover:text-danger opacity-0 group-hover:opacity-100 lg:group-hover:opacity-100 transition-opacity"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -225,7 +225,7 @@ export default function GoalsTemplates() {
                               value={tempProgress}
                               onChange={(e) => setTempProgress(e.target.value)}
                               autoFocus
-                              className="w-16 px-1 py-0.5 border border-border rounded text-xs text-[#111827]"
+                              className="w-16 px-2 py-1 border border-primary/50 rounded-lg text-xs text-[#111827] focus:outline-none"
                             />
                             <button 
                               onClick={() => handleUpdateProgress(goal.id, tempProgress)}
@@ -235,7 +235,7 @@ export default function GoalsTemplates() {
                             </button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-1 cursor-pointer hover:text-[#111827]" onClick={() => {
+                          <div className="flex items-center gap-1 cursor-pointer hover:text-[#111827] transition-colors" onClick={() => {
                             setEditingProgressId(goal.id);
                             setTempProgress(goal.current);
                           }}>
@@ -245,21 +245,21 @@ export default function GoalsTemplates() {
                         )}
                         <span>{Math.round(progress)}%</span>
                       </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-[#111827] rounded-full transition-all" style={{ width: `${progress}%` }} />
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-[#111827] rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 mt-auto">
+                    <div className="flex items-center justify-between pt-2 mt-auto border-t border-gray-50">
                       <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-text-secondary uppercase">Deadline</span>
+                        <span className="text-[10px] font-bold text-text-secondary uppercase tracking-tighter">Deadline</span>
                         <span className="text-xs font-bold text-[#111827]">{goal.endDate || 'No deadline'}</span>
                       </div>
                       <button 
                         onClick={() => setSelectedGoal(goal)}
-                        className="text-xs font-bold text-[#111827] hover:underline"
+                        className="px-4 py-1.5 bg-gray-50 hover:bg-gray-100 text-xs font-bold text-[#111827] rounded-lg transition-colors"
                       >
-                        Edit Details
+                        Details
                       </button>
                     </div>
                   </div>
