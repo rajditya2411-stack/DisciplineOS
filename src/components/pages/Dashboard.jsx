@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Bell, X as XIcon } from 'lucide-react';
 import StatCard from '../dashboard/StatCard';
 import TimeScheduler from '../dashboard/TimeScheduler';
 import HabitChecklist from '../dashboard/HabitChecklist';
@@ -12,6 +12,7 @@ import GoalsWidget from '../dashboard/GoalsWidget';
 import NotesWidget from '../dashboard/NotesWidget';
 import { useHabits } from '../../context/HabitsContext';
 import { useTimeBlocks } from '../../context/TimeBlocksContext';
+import { useNotes } from '../../context/NotesContext';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -20,9 +21,12 @@ function todayStr() {
 export default function Dashboard() {
   const { habits, completions, getStreak } = useHabits();
   const { getTotalHoursForDate } = useTimeBlocks();
+  const { notifications, markNotificationRead, clearNotifications } = useNotes();
   const [selectedDate, setSelectedDate] = useState(todayStr());
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   const isToday = selectedDate === todayStr();
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const completedToday = useMemo(() => {
     const day = completions[selectedDate] || {};
@@ -61,12 +65,12 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 lg:space-y-8 px-4 sm:px-6 lg:px-8 pb-12">
-      {/* Date Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 p-2 rounded-xl">
-            <CalendarIcon className="w-5 h-5 text-primary" />
-          </div>
+        {/* Date Navigation */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary/10 p-2 rounded-xl">
+              <CalendarIcon className="w-5 h-5 text-text-secondary" />
+            </div>
           <div>
             <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">
               {isToday ? "Today's Overview" : "Schedule Overview"}
@@ -96,6 +100,67 @@ export default function Dashboard() {
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
+          
+          <div className="relative">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsNotifOpen(!isNotifOpen);
+              }}
+              className="p-2 bg-background rounded-xl border border-border relative hover:bg-card transition-colors"
+            >
+              <Bell className="w-5 h-5 text-[#666]" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[10px] flex items-center justify-center rounded-full font-bold border-2 border-card">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+            
+            {isNotifOpen && (
+              <>
+                <div className="fixed inset-0 z-[60]" onClick={() => setIsNotifOpen(false)}></div>
+                <div className="absolute right-0 mt-2 w-80 bg-card border border-border rounded-2xl shadow-2xl z-[70] overflow-hidden">
+                  <div className="p-4 border-b border-border flex items-center justify-between sticky top-0 bg-card">
+                    <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">Reminders</h3>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        clearNotifications();
+                        setIsNotifOpen(false);
+                      }} 
+                      className="text-[10px] text-danger font-bold uppercase hover:underline"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto custom-scrollbar">
+                    {notifications.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <Bell className="w-8 h-8 text-border mx-auto mb-3" />
+                        <p className="text-xs text-text-secondary">No reminders yet</p>
+                      </div>
+                    ) : (
+                      notifications.map(n => (
+                        <div 
+                          key={n.id} 
+                          className={`p-4 border-b border-border last:border-0 hover:bg-background/50 transition-colors cursor-pointer ${!n.read ? 'bg-primary/10' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markNotificationRead(n.id);
+                          }}
+                        >
+                          <p className={`text-sm ${!n.read ? 'text-text-primary font-bold' : 'text-text-secondary'} break-words`}>{n.text}</p>
+                          <p className="text-[10px] text-text-secondary mt-2 uppercase font-bold">{n.time}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
           {!isToday && (
             <button 
               onClick={() => setSelectedDate(todayStr())}
@@ -159,7 +224,7 @@ export default function Dashboard() {
 
       {/* Footer */}
       <footer className="pt-8 pb-4 flex justify-center border-t border-border/50">
-        <p className="text-xs font-bold text-[#111827] uppercase tracking-widest opacity-60">
+        <p className="text-sm font-bold text-black uppercase tracking-widest">
           made by rajditya
         </p>
       </footer>

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const STORAGE_KEY = 'discipline-tracker-notes';
+const NOTIFICATIONS_KEY = 'discipline-tracker-notifications';
 
 const NotesContext = createContext(null);
 
@@ -17,17 +18,49 @@ export function NotesProvider({ children }) {
     return [];
   });
 
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const raw = localStorage.getItem(NOTIFICATIONS_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return [];
+  });
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
   }, [notes]);
 
-  const addNote = useCallback((text, date = todayStr()) => {
+  useEffect(() => {
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
+  }, [notifications]);
+
+  const addNote = useCallback((text, date = todayStr(), reminderTime = null) => {
     const newNote = {
       id: String(Date.now()),
       text: text.trim(),
-      date: new Date(date).toISOString()
+      date: new Date(date).toISOString(),
+      reminderTime: reminderTime // optional: "14:00"
     };
     setNotes(prev => [newNote, ...prev]);
+  }, []);
+
+  const addNotification = useCallback((note) => {
+    const newNotif = {
+      id: String(Date.now()),
+      noteId: note.id,
+      text: note.text,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      read: false
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+  }, []);
+
+  const markNotificationRead = useCallback((id) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  }, []);
+
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
   }, []);
 
   const updateNote = useCallback((id, text) => {
@@ -39,7 +72,10 @@ export function NotesProvider({ children }) {
   }, []);
 
   return (
-    <NotesContext.Provider value={{ notes, addNote, updateNote, deleteNote }}>
+    <NotesContext.Provider value={{ 
+      notes, addNote, updateNote, deleteNote, 
+      notifications, addNotification, markNotificationRead, clearNotifications 
+    }}>
       {children}
     </NotesContext.Provider>
   );
