@@ -34,12 +34,13 @@ export function NotesProvider({ children }) {
     localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
   }, [notifications]);
 
-  const addNote = useCallback((text, date = todayStr(), reminderTime = null) => {
+  const addNote = useCallback((text, date = todayStr(), reminderTime = null, priority = 'medium') => {
     const newNote = {
       id: String(Date.now()),
       text: text.trim(),
       date: new Date(date).toISOString(),
-      reminderTime: reminderTime // optional: "14:00"
+      reminderTime: reminderTime, // optional: "14:00"
+      priority: priority // 'low', 'medium', 'high'
     };
     setNotes(prev => [newNote, ...prev]);
   }, []);

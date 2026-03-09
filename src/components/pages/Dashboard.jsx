@@ -7,7 +7,7 @@ import WeeklyProgressChart from '../dashboard/WeeklyProgressChart';
 import TimeDistributionChart from '../dashboard/TimeDistributionChart';
 import YearHeatmap from '../dashboard/YearHeatmap';
 import ActiveSkills from '../dashboard/ActiveSkills';
-import MoneyAtStake from '../dashboard/MoneyAtStake';
+import MissedLogsWidget from '../dashboard/MissedLogsWidget';
 import GoalsWidget from '../dashboard/GoalsWidget';
 import NotesWidget from '../dashboard/NotesWidget';
 import { useHabits } from '../../context/HabitsContext';
@@ -20,7 +20,7 @@ function todayStr() {
 
 export default function Dashboard() {
   const { habits, completions, getStreak } = useHabits();
-  const { getTotalHoursForDate } = useTimeBlocks();
+  const { blocks } = useTimeBlocks();
   const { notifications, markNotificationRead, clearNotifications } = useNotes();
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -50,7 +50,21 @@ export default function Dashboard() {
     return { value: max, name };
   }, [habits, getStreak]);
 
-  const totalScheduled = getTotalHoursForDate(selectedDate);
+  const activeDaysThisMonth = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = now;
+    let count = 0;
+
+    for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().slice(0, 10);
+      const dayCompletions = completions[dateStr] || {};
+      const completedHabits = habits.filter(h => dayCompletions[h.id]).length;
+      const doneBlocks = blocks.filter(b => b.date === dateStr && b.done).length;
+      if (completedHabits > 0 || doneBlocks > 0) count++;
+    }
+    return count;
+  }, [habits, completions, blocks]);
 
   const formatDate = (dateString) => {
     const options = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
@@ -188,10 +202,9 @@ export default function Dashboard() {
           icon="🔥"
         />
         <StatCard
-          label={isToday ? "Scheduled Today" : "Scheduled on Date"}
-          progress={totalScheduled <= 0 ? 0 : Math.min(100, Math.round(totalScheduled * 10))}
-          progressLabel={`${totalScheduled.toFixed(1)} hrs`}
-          largeRing
+          label="Active Days This Month"
+          value={String(activeDaysThisMonth)}
+          subtext="Days with completions"
         />
       </div>
 
@@ -217,7 +230,7 @@ export default function Dashboard() {
       {/* Row 5 - Bottom widgets */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <ActiveSkills />
-        <MoneyAtStake />
+        <MissedLogsWidget />
         <GoalsWidget />
         <NotesWidget selectedDate={selectedDate} />
       </div>

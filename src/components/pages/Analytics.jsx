@@ -70,15 +70,25 @@ export default function Analytics() {
       d.setDate(now.getDate() - i);
       const dateStr = d.toISOString().slice(0, 10);
       const dayCompletions = completions[dateStr] || {};
-      const completed = habits.filter(h => dayCompletions[h.id]).length;
-      const pct = habits.length ? (completed / habits.length) * 100 : 0;
+      
+      // Count completed habits
+      const completedHabits = habits.filter(h => dayCompletions[h.id]).length;
+      
+      // Count completed time blocks
+      const completedBlocks = blocks.filter(b => b.date === dateStr && b.done).length;
+      
+      // Calculate completion rate based on both habits and time blocks
+      const totalPossible = habits.length + blocks.filter(b => b.date === dateStr).length;
+      const totalCompleted = completedHabits + completedBlocks;
+      const pct = totalPossible > 0 ? (totalCompleted / totalPossible) * 100 : 0;
+      
       data.push({
         date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         value: Math.round(pct)
       });
     }
     return data;
-  }, [habits, completions]);
+  }, [habits, completions, blocks]);
 
   const distributionData = useMemo(() => {
     const categories = {};

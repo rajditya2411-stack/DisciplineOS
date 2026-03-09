@@ -1,101 +1,245 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useHabits } from '../../context/HabitsContext';
-import { AlertCircle, Calendar, ChevronLeft, ChevronRight, History, Ban } from 'lucide-react';
+import { useTimeBlocks } from '../../context/TimeBlocksContext';
+import { useMissedLogs } from '../../context/MissedLogsContext';
+import { AlertCircle, FileText, Trash2, Plus, X } from 'lucide-react';
 
 export default function MissedLogs() {
   const { habits, completions } = useHabits();
-  const [viewDate, setViewDate] = useState(new Date().toISOString().split('T')[0]);
+  const { blocks } = useTimeBlocks();
+  const { missedReasons, addReason, updateReason, deleteReason, getReasonsForTask } = useMissedLogs();
+  const [expandedTask, setExpandedTask] = useState(null);
+  const [reasonText, setReasonText] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState('');
 
-  // Generate missed logs for the last 30 days
+  // Generate missed logs for the last 30 days (both habits and time blocks)
   const missedLogs = useMemo(() => {
     const logs = [];
     const now = new Date();
+    
     for (let i = 0; i < 30; i++) {
       const d = new Date(now);
       d.setDate(now.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
-      const dayCompletions = completions[dateStr] || {};
+      if (dateStr > now.toISOString().split('T')[0]) continue; // Don't show future dates
       
-      const missed = habits.filter(h => !dayCompletions[h.id]);
+      const dayCompletions = completions[dateStr] || {};
+      const dayBlocks = blocks.filter(b => b.date === dateStr);
+      
+      // Missed habits
+      const missedHabits = habits.filter(h => !dayCompletions[h.id]).map(h => ({
+        id: h.id,
+        name: h.name,
+        type: 'habit'
+      }));
+      
+      // Incomplete time blocks
+      const incompleteBlocks = dayBlocks.filter(b => !b.done).map(b => ({
+        id: b.id,
+        name: b.title,
+        type: 'block'
+      }));
+      
+      const missed = [...missedHabits, ...incompleteBlocks];
+      
       if (missed.length > 0) {
         logs.push({
           date: dateStr,
-          items: missed.map(m => m.name),
+          items: missed,
           totalMissed: missed.length
         });
       }
     }
     return logs;
-  }, [habits, completions]);
+  }, [habits, completions, blocks]);
+
+  const totalMissed = missedLogs.reduce((acc, curr) => acc + curr.totalMissed, 0);
+
+  const handleAddReason = (taskId, taskName, date, taskType) => {
+    if (!reasonText.trim()) return;
+    addReason(taskId, taskName, date, reasonText, taskType);
+    setReasonText('');
+  };
+
+  const handleUpdateReason = (id) => {
+    if (!editText.trim()) return;
+    updateReason(id, editText);
+    setEditingId(null);
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-[#111827] flex items-center gap-2">
-          <Ban className="w-6 h-6" /> Missed Logs & Penalties
+        <h1 className="text-3xl font-bold text-text-primary flex items-center gap-2">
+          <AlertCircle className="w-8 h-8 text-danger" /> 
+          Missed Logs & Reasons
         </h1>
-        <div className="flex items-center gap-2">
-          <History className="w-4 h-4 text-text-secondary" />
-          <span className="text-sm font-medium text-text-secondary uppercase tracking-wider">30-Day History</span>
+        <div className="text-right">
+          <div className="text-4xl font-black text-text-primary">{totalMissed}</div>
+          <p className="text-xs text-text-secondary uppercase font-bold tracking-wider">Total Incomplete Tasks</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left: Summary Stats */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white rounded-2xl p-6 border border-border shadow-sm">
-            <h3 className="text-sm font-bold text-[#111827] uppercase tracking-wider mb-4 text-center">Monthly Impact</h3>
-            <div className="flex flex-col items-center justify-center py-6 bg-gray-50 rounded-xl">
-              <span className="text-5xl font-black text-[#111827] mb-2">{missedLogs.reduce((acc, curr) => acc + curr.totalMissed, 0)}</span>
-              <span className="text-[10px] font-bold text-text-secondary uppercase tracking-widest">Total Missed Habits</span>
-            </div>
-            <div className="mt-6 space-y-3">
-              <div className="flex justify-between text-xs font-bold uppercase">
-                <span className="text-text-secondary">At Stake</span>
-                <span className="text-danger">$ {missedLogs.reduce((acc, curr) => acc + curr.totalMissed, 0) * 5}</span>
-              </div>
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-danger w-2/3" />
-              </div>
-            </div>
-          </div>
+      {missedLogs.length === 0 ? (
+        <div className="bg-card rounded-2xl p-12 border border-border text-center">
+          <FileText className="w-12 h-12 text-border mx-auto mb-3" />
+          <p className="text-text-secondary font-medium">Perfect! No missed tasks in the last 30 days.</p>
         </div>
-
-        {/* Right: Detailed Log */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-border bg-gray-50/50">
-              <h3 className="text-sm font-bold text-[#111827] uppercase tracking-wider">Historical Log</h3>
-            </div>
-            <div className="divide-y divide-border">
-              {missedLogs.length === 0 ? (
-                <div className="p-12 text-center">
-                  <p className="text-text-secondary font-medium">No missed habits in the last 30 days. Perfect discipline!</p>
+      ) : (
+        <div className="space-y-4">
+          {missedLogs.map((log) => (
+            <div key={log.date} className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+              <div className="p-6 border-b border-border bg-background/30 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">
+                    {new Date(log.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                  </h3>
                 </div>
-              ) : (
-                missedLogs.map((log) => (
-                  <div key={log.date} className="p-6 hover:bg-gray-50/50 transition-colors">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <span className="text-sm font-bold text-[#111827]">{new Date(log.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
-                        <div className="flex gap-2 mt-1">
-                          {log.items.map(name => (
-                            <span key={name} className="px-2 py-0.5 bg-gray-100 text-[10px] font-bold text-text-secondary rounded uppercase">{name}</span>
-                          ))}
+                <div className="text-right">
+                  <span className="text-lg font-black text-danger">{log.totalMissed}</span>
+                  <span className="text-xs text-text-secondary font-bold uppercase ml-2">Incomplete</span>
+                </div>
+              </div>
+
+              <div className="divide-y divide-border">
+                {log.items.map((item) => {
+                  const reasons = getReasonsForTask(item.id, log.date);
+                  const isExpanded = expandedTask === `${item.id}-${log.date}`;
+                  
+                  return (
+                    <div key={`${item.id}-${log.date}`} className="p-6">
+                      <div 
+                        className="flex items-center justify-between cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => setExpandedTask(isExpanded ? null : `${item.id}-${log.date}`)}
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className={`w-3 h-3 rounded-full ${item.type === 'habit' ? 'bg-primary' : 'bg-secondary'}`} />
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-text-primary">{item.name}</p>
+                            <p className="text-xs text-text-secondary uppercase font-bold">{item.type === 'habit' ? 'Habit' : 'Time Block'}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {reasons.length > 0 && (
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-bold">
+                              {reasons.length} {reasons.length === 1 ? 'reason' : 'reasons'}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <span className="block text-sm font-black text-danger">-{log.totalMissed}</span>
-                        <span className="text-[9px] font-bold text-text-secondary uppercase">Missed</span>
-                      </div>
+
+                      {isExpanded && (
+                        <div className="mt-4 pt-4 border-t border-border space-y-4">
+                          {/* Existing Reasons */}
+                          {reasons.length > 0 && (
+                            <div className="space-y-2">
+                              {reasons.map(reason => (
+                                <div key={reason.id} className="bg-background/50 rounded-lg p-3 flex items-start justify-between">
+                                  {editingId === reason.id ? (
+                                    <div className="flex-1 flex gap-2">
+                                      <input
+                                        autoFocus
+                                        type="text"
+                                        value={editText}
+                                        onChange={(e) => setEditText(e.target.value)}
+                                        className="flex-1 bg-card border border-primary/30 rounded px-2 py-1 text-sm text-text-primary focus:outline-none"
+                                      />
+                                      <button 
+                                        onClick={() => handleUpdateReason(reason.id)}
+                                        className="bg-success text-white px-2 py-1 rounded text-xs font-bold"
+                                      >
+                                        Save
+                                      </button>
+                                      <button 
+                                        onClick={() => setEditingId(null)}
+                                        className="text-text-secondary hover:text-danger transition-colors"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <p className="text-sm text-text-primary flex-1">{reason.reason}</p>
+                                      <div className="flex items-center gap-2 ml-3">
+                                        <button 
+                                          onClick={() => {
+                                            setEditingId(reason.id);
+                                            setEditText(reason.reason);
+                                          }}
+                                          className="text-text-secondary hover:text-primary transition-colors text-xs"
+                                        >
+                                          Edit
+                                        </button>
+                                        <button 
+                                          onClick={() => deleteReason(reason.id)}
+                                          className="text-text-secondary hover:text-danger transition-colors"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Add New Reason */}
+                          {editingId !== `add-${item.id}-${log.date}` ? (
+                            <button
+                              onClick={() => {
+                                setEditingId(`add-${item.id}-${log.date}`);
+                                setReasonText('');
+                              }}
+                              className="w-full flex items-center justify-center gap-2 text-sm font-bold text-primary hover:bg-primary/10 p-2 rounded transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add Reason
+                            </button>
+                          ) : (
+                            <div className="flex gap-2">
+                              <input
+                                autoFocus
+                                type="text"
+                                value={reasonText}
+                                onChange={(e) => setReasonText(e.target.value)}
+                                placeholder="Why wasn't this completed?"
+                                className="flex-1 bg-card border border-primary/30 rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleAddReason(item.id, item.name, log.date, item.type);
+                                    setEditingId(null);
+                                  }
+                                }}
+                              />
+                              <button
+                                onClick={() => {
+                                  handleAddReason(item.id, item.name, log.date, item.type);
+                                  setEditingId(null);
+                                }}
+                                className="bg-primary text-white px-3 py-2 rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="text-text-secondary hover:text-danger transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
-              )}
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, CheckSquare, Clock, BarChart3, Calendar, GraduationCap, Trophy, DollarSign, Settings, Target, Ban } from 'lucide-react';
+import { Home, CheckSquare, Clock, BarChart3, Calendar, GraduationCap, Target, Ban, Settings, BookOpen } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { icon: Calendar, label: 'Weekly Review', path: '/weekly-review' },
   { icon: GraduationCap, label: 'Skills', path: '/skills' },
   { icon: Target, label: 'Goals & Templates', path: '/goals' },
+  { icon: BookOpen, label: 'Notes', path: '/notes' },
   { icon: Ban, label: 'Missed Logs', path: '/missed-logs' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
